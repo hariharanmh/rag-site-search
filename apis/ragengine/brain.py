@@ -3,7 +3,7 @@ from sentence_transformers import SentenceTransformer
 import google.generativeai as genai
 
 from configs.constants import GOOGLE_API_KEY
-from .db import VECTOR_DB
+# from .routes import VECTOR_DB
 
 class Brain:
 
@@ -22,7 +22,7 @@ class Brain:
         top_k_ids = np.argsort(scores.flatten())[::-1][:k]
         return top_k_ids
 
-    def get_context(self, query: str, docs, docs_embedding, query_embedding) -> str:
+    def get_context(self, query, docs, docs_embedding, query_embedding) -> str:
         top_k_ids = self.get_top_k_matching_docs(docs_embedding, query_embedding,)
         most_scored_docs = [docs[idx] for idx in top_k_ids]
         context = ""
@@ -30,18 +30,24 @@ class Brain:
             context += f"{doc}\n"
         return context
 
-    def generate_response(self, query: str) -> str:
+    def generate_response(self, query: str, VECTOR_DB) -> str:
         docs = VECTOR_DB["data"]
         docs_embedding = VECTOR_DB["embedding"]
         query_embedding = self.embed_model.encode([query], normalize_embeddings=True)
         context = self.get_context(query, docs, docs_embedding, query_embedding)
         prompt = f"""
-            Use the following CONTEXT to answer the QUESTION at the end.
-            If you don't know the answer, just say that you don't know, don't try to make up an answer.
+            You are an intelligent search engine. You will be provided with some retrieved context, as well as the users query.
 
-            CONTEXT: {context}
-            QUESTION: {query}
+            Your job is to understand the request, and answer based on the retrieved context.
+            Here is context:
+
+            <context>
+            {context}
+            </context>
+
+            Question: {query}
         """
+        print(prompt)
         model = genai.GenerativeModel('gemini-pro')
         response = model.generate_content(prompt)
         return response.text
