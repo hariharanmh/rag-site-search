@@ -1,0 +1,23 @@
+# Dev environment
+pip
+autopep8
+
+# Api
+fastapi[standard]
+uvicorn[standard]
+
+# Testing
+httpx
+pytest
+
+# DB
+sqlalchemy
+
+# DAG
+# sentence-transformers
+# numpy
+# google-generativeai
+
+# Web-Scrap
+requests
+beautifulsoup4
