@@ -34,9 +34,9 @@ def collect_title_headers_paragraphs_meta(soup):
     
     page_data["metadatas"] = []
     for metadata in soup.find_all('meta'):
-        clean_text = clean_text(metadata.text)
-        if clean_text and clean_text.strip() != "":
-            page_data["metadatas"].append(clean_text)
+        cleaned_text = clean_text(metadata.text)
+        if cleaned_text and cleaned_text.strip() != "":
+            page_data["metadatas"].append(cleaned_text)
 
     return page_data
 

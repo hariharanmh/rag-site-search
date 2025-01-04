@@ -17,3 +17,10 @@ CONTACT = dict(
 OPENAPI_URL = "/api/v1/openapi.json"
 DOCS_URL = "/api/v1/docs"
 REDOC_URL = "/api/v1/redoc"
+
+GOOGLE_API_KEY = "AIzaSyCHQ2gNT_McQne6zdPPmzbOeDV041Vnr1o"
+EMBEDDING_MODEL_NAME = "Alibaba-NLP/gte-base-en-v1.5"
+
+DATA_PATH = "data/archive/*"
+CHROMA_PATH = "site_data_embeddings"
+COLLECTION_NAME = "site_data"

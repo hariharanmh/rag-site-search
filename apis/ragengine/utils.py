@@ -1,24 +1,36 @@
 
-from .routes import brain
+# import polars as pl
 from .scrape import scrape_site_from_sitemap
+# from .chroma_utils import build_chroma_collection
 
-import json
+from configs import constants
+from .db import VECTOR_DB
 
-VECTOR_DB = {}
-
-def create_knowledge_base_from_sitemap(sitemap_url: str):
+def create_knowledge_base_from_sitemap(brain, sitemap_url: str):
     site_data = scrape_site_from_sitemap(sitemap_url)
 
     docs = []
     for url, page_data in site_data.items():
-        docs = create_document_from_page_data(url, page_data)
-    
+        docs.append(create_document_from_page_data(url, page_data))
+
     VECTOR_DB["url"] = sitemap_url
     VECTOR_DB["data"] = docs
     VECTOR_DB["embedding"] = brain.generate_embeddings(docs)
 
-    # with open('data.json', 'w') as f:
-    #     json.dump(site_data, f)
+    # build_chroma_collection(
+    #     constants.CHROMA_PATH,
+    #     constants.COLLECTION_NAME,
+    #     constants.EMBEDDING_MODEL_NAME,
+    #     chroma_car_reviews_dict["ids"],
+    #     chroma_car_reviews_dict["documents"],
+    #     chroma_car_reviews_dict["metadatas"]
+    # )
+
+    # with open('data.json', 'w', encoding='utf-8') as f:
+    #     json.dump(site_data, f, ensure_ascii=False, indent=4)
+    # # print(site_data)
+    # with open('sample-data.txt', 'w', encoding='utf-8') as f:
+    #     f.write(str(site_data))
 
     # print(f"Scraped {len(site_data)} pages")
     
@@ -34,13 +46,17 @@ def create_knowledge_base_from_sitemap(sitemap_url: str):
 
 
 def create_document_from_page_data(url: str, page_data: dict) -> str:
-    
+    title = page_data.pop("title")
+    metadatas = page_data.pop("metadatas")
+
     document = f"URL: {url}\n"
-    document += f"Title: {page_data['title']}\n"
+    document += f"Title: {title}\n"
 
     for header, paragraphs in page_data.items():
         document += f"Header: {header};"
         for p in paragraphs:
             document += f"Paragraph: {p};"
+    
+    document += f"Metadatas: {metadatas}\n"
 
     return document

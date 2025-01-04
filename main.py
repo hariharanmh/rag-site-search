@@ -4,8 +4,6 @@ from apis.ragengine.routes import router as rag_engine_router
 
 from configs import constants
 
-import time
-
 
 app = FastAPI(
     title=constants.APP_TITLE,

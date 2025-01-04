@@ -2,37 +2,44 @@ import numpy as np
 from sentence_transformers import SentenceTransformer
 import google.generativeai as genai
 
+from configs.constants import GOOGLE_API_KEY
+from .db import VECTOR_DB
+
 class Brain:
 
     def __init__(self, embedding_model_name: str = "Alibaba-NLP/gte-base-en-v1.5"):
         self.embed_model = SentenceTransformer(embedding_model_name, trust_remote_code=True)
-        genai.configure(api_key=userdata.get("GOOGLE_API_KEY"))
+        genai.configure(api_key=GOOGLE_API_KEY)
         print(f"Loaded embedding model: {embedding_model_name}")
 
-    def generate_embeddings(embed_model, documents: list[str]) -> list[list[float]]:
-        embeddings = embed_model.encode(documents, normalize_embeddings=True)
+    def generate_embeddings(self, documents: list[str]) -> list[list[float]]:
+        embeddings = self.embed_model.encode(documents, normalize_embeddings=True)
         print(f"Generated embeddings for {len(documents)} documents with size {embeddings.size}")
         return embeddings
 
-    def get_top_k_matching_docs(docs, dosc_embedding, query_embedding, k: int = 3):
-        scores = np.dot(query_embed, docs_embed.T)
+    def get_top_k_matching_docs(self, docs_embedding, query_embedding, k: int = 3) -> list[int]:
+        scores = np.dot(query_embedding, docs_embedding.T)
         top_k_ids = np.argsort(scores.flatten())[::-1][:k]
-        most_scored_docs = [docs[idx] for idx in top_k_ids]
-        return most_scored_docs
+        return top_k_ids
 
-    def get_context(query: str, ) -> str:
-        most_scored_docs = get_top_k_matching_docs(docs, docs_embed, query_embed)
+    def get_context(self, query: str, docs, docs_embedding, query_embedding) -> str:
+        top_k_ids = self.get_top_k_matching_docs(docs_embedding, query_embedding,)
+        most_scored_docs = [docs[idx] for idx in top_k_ids]
         context = ""
         for doc in most_scored_docs:
             context += f"{doc}\n"
         return context
 
-    def generate_response(query: str, context: str) -> str:
+    def generate_response(self, query: str) -> str:
+        docs = VECTOR_DB["data"]
+        docs_embedding = VECTOR_DB["embedding"]
+        query_embedding = self.embed_model.encode([query], normalize_embeddings=True)
+        context = self.get_context(query, docs, docs_embedding, query_embedding)
         prompt = f"""
             Use the following CONTEXT to answer the QUESTION at the end.
             If you don't know the answer, just say that you don't know, don't try to make up an answer.
 
-            CONTEXT: {CONTEXT}
+            CONTEXT: {context}
             QUESTION: {query}
         """
         model = genai.GenerativeModel('gemini-pro')
