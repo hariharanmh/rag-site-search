@@ -10,55 +10,115 @@ def clean_text(text):
 
 def collect_title_headers_paragraphs_meta(soup):
     """
-    Collect headers and their associated paragraphs from HTML content
-    Returns a dictionary with headers as keys and lists of paragraphs as values
+    Collect title, all headers (h1-h6), paragraphs, and metadata from HTML content
+    Returns a dictionary with structured content
     """
-    page_data = {}
-    # Find title
-    if soup.title:
-        page_data["title"] = clean_text(soup.title.string)
+    try:
+        page_data = {
+            "title": "",
+            "metadatas": [],
+            "headings": {}
+        }
 
-    # Find all headers h1-h6
-    for level in range(1, 7):
-        headings = soup.find_all(f'h{level}')
-        for heading in headings:
-            header_text = clean_text(heading.text)
-            if header_text:
-                if header_text not in page_data["headings"]:
+        # Find title safely
+        try:
+            if soup and soup.title and soup.title.string:
+                page_data["title"] = clean_text(soup.title.string)
+        except Exception as e:
+            print(f"Error extracting title: {str(e)}")
+
+        # Find all headers h1-h6 and their paragraphs
+        try:
+            # First collect all headings to process
+            all_headings = []
+            for level in range(1, 7):
+                headings = soup.find_all(f'h{level}')
+                for heading in headings:
+                    if heading and heading.text:
+                        all_headings.append((level, heading))
+            
+            # Sort headings by their appearance in document
+            all_headings.sort(key=lambda x: x[1].sourceline if hasattr(x[1], 'sourceline') else 0)
+            
+            # Process each heading
+            for idx, (level, heading) in enumerate(all_headings):
+                try:
+                    header_text = clean_text(heading.text)
+                    if not header_text:
+                        continue
+                        
+                    # Create unique key if header text already exists
+                    base_header_text = header_text
+                    counter = 1
+                    while header_text in page_data["headings"]:
+                        header_text = f"{base_header_text} ({counter})"
+                        counter += 1
+
                     page_data["headings"][header_text] = {
                         "level": level,
                         "paragraphs": [],
-                        "position": len(page_data["headings"])
+                        "position": idx
                     }
-                
-                # Collect paragraphs until next heading of same or higher level
-                current_element = heading.find_next_sibling()
-                while current_element:
-                    if current_element.name and current_element.name[0] == 'h':
-                        current_level = int(current_element.name[1])
-                        if current_level <= level:
-                            break
-                    if current_element.name == 'p':
-                        paragraph_text = clean_text(current_element.text)
-                        if paragraph_text:
-                            page_data["headings"][header_text]["paragraphs"].append(paragraph_text)
-                    current_element = current_element.find_next_sibling()
+                    
+                    # Find next element and collect paragraphs
+                    current_element = heading.find_next_sibling()
+                    while current_element:
+                        if current_element.name and current_element.name[0] == 'h':
+                            try:
+                                current_level = int(current_element.name[1])
+                                if current_level <= level:
+                                    break
+                            except ValueError:
+                                pass
+                        
+                        if current_element.name == 'p':
+                            paragraph_text = clean_text(current_element.text)
+                            if paragraph_text:
+                                page_data["headings"][header_text]["paragraphs"].append(paragraph_text)
+                        
+                        current_element = current_element.find_next_sibling()
+                        
+                except Exception as e:
+                    print(f"Error processing heading '{header_text if 'header_text' in locals() else 'unknown'}': {str(e)}")
+                    continue
+                    
+        except Exception as e:
+            print(f"Error processing headings: {str(e)}")
+            page_data["headings"] = {}  # Reset headings if major error occurs
 
-    # Collect metadata
-    page_data["metadatas"] = []
-    for metadata in soup.find_all('meta'):
-        if metadata.get('content'):
-            cleaned_text = clean_text(metadata['content'])
-            metadata_name = metadata.get('name', '')
-            if cleaned_text and metadata_name == 'description':
-                meta_data = {
-                    'content': cleaned_text,
-                    'name': metadata_name,
-                    'property': metadata.get('property', ''),
-                }
-                page_data["metadatas"].append(meta_data)
+        # Collect metadata safely
+        try:
+            page_data["metadatas"] = []
+            if soup.find_all('meta'):
+                for metadata in soup.find_all('meta'):
+                    try:
+                        content = metadata.get('content', '')
+                        if content:
+                            cleaned_text = clean_text(content)
+                            if cleaned_text:
+                                meta_data = {
+                                    'content': cleaned_text,
+                                    'name': metadata.get('name', ''),
+                                    'property': metadata.get('property', '')
+                                }
+                                page_data["metadatas"].append(meta_data)
+                    except Exception as e:
+                        print(f"Error processing metadata item: {str(e)}")
+                        continue
+        except Exception as e:
+            print(f"Error processing metadata: {str(e)}")
+            page_data["metadatas"] = []  # Reset metadata if major error occurs
 
-    return page_data
+        return page_data
+
+    except Exception as e:
+        print(f"Error in collect_title_headers_paragraphs_meta: {str(e)}")
+        # Return a valid but empty structure if something goes wrong
+        return {
+            "title": "",
+            "metadatas": [],
+            "headings": {}
+        }
 
 def get_urls_from_sitemap(sitemap_url):
     """Extract all URLs from a sitemap"""
