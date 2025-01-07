@@ -6,7 +6,7 @@ from configs.constants import GEMINI_API_KEY
 
 class Brain:
 
-    def __init__(self, embedding_model_name: str = "Alibaba-NLP/gte-base-en-v1.5"):
+    def __init__(self, embedding_model_name: str = "BAAI/bge-small-en-v1.5"):
         self.embed_model = SentenceTransformer(embedding_model_name, trust_remote_code=True)
         genai.configure(api_key=GEMINI_API_KEY)
         print(f"Loaded embedding model: {embedding_model_name}")
