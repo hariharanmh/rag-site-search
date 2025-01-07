@@ -11,33 +11,25 @@ def create_knowledge_base_from_sitemap(brain, sitemap_url: str, VECTOR_DB):
         docs.append(create_document_from_page_data(url, page_data))
 
     print(f"Scraped {len(docs)} pages")
+    
     VECTOR_DB["url"] = sitemap_url
     VECTOR_DB["data"] = docs
     VECTOR_DB["embedding"] = brain.generate_embeddings(docs)
 
-    # for url, page_data in site_data.items():
-    #     print(f"\nURL: {url}")
-    #     print(f"Title: {page_data['title']}")
-    #     for header, paragraphs in page_data.items():
-    #         print(f"\nHeader: {header}")
-    #         print("Paragraphs:")
-    #         for p in paragraphs:
-    #             print(f"- {p[:100]}...")
-    #     print(f"Metadatas: {page_data['metadatas']}")
-
 
 def create_document_from_page_data(url: str, page_data: dict) -> str:
-    title = page_data.pop("title") if "title" in page_data else ""
-    metadatas = page_data.pop("metadatas") if "metadatas" in page_data else ""
-
     document = f"URL: {url}\n"
-    document += f"Title: {title}\n"
+    document += f"Title: {page_data.get('title', )}\n"
 
-    for header, paragraphs in page_data.items():
-        document += f"Header: {header};"
-        for p in paragraphs:
-            document += f"Paragraph: {p};"
+    document += "Headings and their paragraphs:\n"
+    for heading, content in page_data.get('headings', {}).items():
+        document += f"{heading}\n"
+        paragraphs = content['paragraphs']
+        if paragraphs:
+            document += f"{' '.join(paragraphs)}\n"
     
-    document += f"Metadatas: {metadatas}\n"
+    document += f"Metadatas:"
+    for metadata in page_data.get("metadatas", []):
+        document += f"{metadata['content']}\n"
 
     return document

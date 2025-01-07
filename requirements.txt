@@ -11,17 +11,13 @@ httpx
 pytest
 
 # DB
-chromadb
 sqlalchemy
 
 # DAG
-sentence-transformers
-numpy
-google-generativeai
+# sentence-transformers
+# numpy
+# google-generativeai
 
 # Web-Scrap
 requests
 beautifulsoup4
-
-more-itertools
-polars

@@ -15,28 +15,48 @@ def collect_title_headers_paragraphs_meta(soup):
     """
     page_data = {}
     # Find title
-    page_data["title"] = clean_text(soup.title.string)
+    if soup.title:
+        page_data["title"] = clean_text(soup.title.string)
 
-    # Find all h1 headers
-    headings = soup.find_all('h1')
-    
-    for heading in headings:
-        header_text = clean_text(heading.text)
-        
-        page_data[header_text] = []
-        
-        current_element = heading.find_next_sibling()
-        while current_element and current_element.name != 'h1':
-            if current_element.name == 'p':
-                paragraph_text = clean_text(current_element.text)
-                page_data[header_text].append(paragraph_text)
-            current_element = current_element.find_next_sibling()
-    
+    # Find all headers h1-h6
+    for level in range(1, 7):
+        headings = soup.find_all(f'h{level}')
+        for heading in headings:
+            header_text = clean_text(heading.text)
+            if header_text:
+                if header_text not in page_data["headings"]:
+                    page_data["headings"][header_text] = {
+                        "level": level,
+                        "paragraphs": [],
+                        "position": len(page_data["headings"])
+                    }
+                
+                # Collect paragraphs until next heading of same or higher level
+                current_element = heading.find_next_sibling()
+                while current_element:
+                    if current_element.name and current_element.name[0] == 'h':
+                        current_level = int(current_element.name[1])
+                        if current_level <= level:
+                            break
+                    if current_element.name == 'p':
+                        paragraph_text = clean_text(current_element.text)
+                        if paragraph_text:
+                            page_data["headings"][header_text]["paragraphs"].append(paragraph_text)
+                    current_element = current_element.find_next_sibling()
+
+    # Collect metadata
     page_data["metadatas"] = []
     for metadata in soup.find_all('meta'):
-        cleaned_text = clean_text(metadata.text)
-        if cleaned_text and cleaned_text.strip() != "":
-            page_data["metadatas"].append(cleaned_text)
+        if metadata.get('content'):
+            cleaned_text = clean_text(metadata['content'])
+            metadata_name = metadata.get('name', '')
+            if cleaned_text and metadata_name == 'description':
+                meta_data = {
+                    'content': cleaned_text,
+                    'name': metadata_name,
+                    'property': metadata.get('property', ''),
+                }
+                page_data["metadatas"].append(meta_data)
 
     return page_data
 
@@ -46,24 +66,16 @@ def get_urls_from_sitemap(sitemap_url):
         response = requests.get(sitemap_url, timeout=10)
         response.raise_for_status()
         
-        # Handle both XML sitemaps and sitemap indexes
         root = ET.fromstring(response.content)
-        
-        # Remove namespace for easier parsing
         namespace = root.tag.split('}')[0] + '}'
         urls = []
         
-        # Check if it's a sitemap index
         if 'sitemapindex' in root.tag:
-            # Get URLs of all sitemaps
             sitemap_urls = [elem.find(f'{namespace}loc').text 
                           for elem in root.findall(f'.//{namespace}sitemap')]
-            
-            # Recursively process each sitemap
             for url in sitemap_urls:
                 urls.extend(get_urls_from_sitemap(url))
         else:
-            # Regular sitemap
             urls = [elem.find(f'{namespace}loc').text 
                    for elem in root.findall(f'.//{namespace}url')]
         
@@ -97,15 +109,13 @@ def scrape_site_from_sitemap(sitemap_url, max_workers=5):
         max_workers (int): Maximum number of concurrent threads for scraping
         
     Returns:
-        dict: Dictionary with URLs as keys and their header-paragraph data as values
+        dict: Dictionary with URLs as keys and their content data as values
     """
     print(f"Starting sitemap scraping from: {sitemap_url}")
     
-    # Get all URLs from sitemap
     urls = get_urls_from_sitemap(sitemap_url)
     print(f"Found {len(urls)} URLs in sitemap")
     
-    # Scrape all pages concurrently
     site_data = {}
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         future_to_url = {executor.submit(scrape_page, url): url for url in urls}
