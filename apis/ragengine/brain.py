@@ -2,14 +2,13 @@ import numpy as np
 from sentence_transformers import SentenceTransformer
 import google.generativeai as genai
 
-from configs.constants import GOOGLE_API_KEY
-# from .routes import VECTOR_DB
+from configs.constants import GEMINI_API_KEY
 
 class Brain:
 
     def __init__(self, embedding_model_name: str = "Alibaba-NLP/gte-base-en-v1.5"):
         self.embed_model = SentenceTransformer(embedding_model_name, trust_remote_code=True)
-        genai.configure(api_key=GOOGLE_API_KEY)
+        genai.configure(api_key=GEMINI_API_KEY)
         print(f"Loaded embedding model: {embedding_model_name}")
 
     def generate_embeddings(self, documents: list[str]) -> list[list[float]]:

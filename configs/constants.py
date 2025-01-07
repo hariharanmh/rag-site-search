@@ -11,14 +11,14 @@ APP_DEBUG = True
 CONTACT = dict(
     name = "Developer",
     url = None,
-    email = "hariharanmh2@gmail.com"
+    email = "imhariharanm@gmail.com"
 )
 
 OPENAPI_URL = "/api/v1/openapi.json"
 DOCS_URL = "/api/v1/docs"
 REDOC_URL = "/api/v1/redoc"
 
-GOOGLE_API_KEY = "AIzaSyCHQ2gNT_McQne6zdPPmzbOeDV041Vnr1o"
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 EMBEDDING_MODEL_NAME = "Alibaba-NLP/gte-base-en-v1.5"
 
 DATA_PATH = "data/archive/*"
