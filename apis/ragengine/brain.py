@@ -17,13 +17,37 @@ class Brain:
         return embeddings
 
     def get_top_k_matching_docs(self, docs_embedding, query_embedding, k: int = 3) -> list[int]:
+
+        def bin_search_on_docs_embedding(target):
+            keys = docs_embedding.keys()
+            
+            left, right = 0, len(keys) - 1
+            
+            while left <= right:
+                mid = (left + right) // 2
+                start, end = keys[mid].split('-')
+                start, end = int(start), int(end)
+
+                if end < target:
+                    left = mid + 1
+                elif start > target:
+                    right = mid - 1
+                else:
+                    return keys[mid]
+            return keys[left]
+
         scores = np.dot(query_embedding, docs_embedding.T)
-        top_k_ids = np.argsort(scores.flatten())[::-1][:k]
-        return top_k_ids
+        top_k_doc_keys = set()
+        for ids in np.argsort(scores.flatten())[::-1]:
+            if len(top_k_doc_keys) == k:
+                break
+            top_k_doc_keys.add(bin_search_on_docs_embedding(ids))
+
+        return top_k_doc_keys
 
     def get_context(self, query, docs, docs_embedding, query_embedding) -> str:
-        top_k_ids = self.get_top_k_matching_docs(docs_embedding, query_embedding,)
-        most_scored_docs = [docs[idx] for idx in top_k_ids]
+        top_k_doc_keys = self.get_top_k_matching_docs(docs_embedding, query_embedding,)
+        most_scored_docs = [docs[keys] for keys in top_k_doc_keys]
         context = ""
         for doc in most_scored_docs:
             context += f"{doc}\n"
@@ -49,4 +73,6 @@ class Brain:
         print(prompt)
         model = genai.GenerativeModel('gemini-pro')
         response = model.generate_content(prompt)
+        if response.error:
+            raise Exception(response.error)
         return response.text
