@@ -10,7 +10,7 @@ def clean_text(text):
 
 def collect_title_headers_paragraphs_meta(soup):
     """
-    Collect title, all headers (h1-h6), paragraphs, and metadata from HTML content
+    Collect title, headers, text content, and metadata from HTML content
     Returns a dictionary with structured content
     """
     try:
@@ -27,9 +27,11 @@ def collect_title_headers_paragraphs_meta(soup):
         except Exception as e:
             print(f"Error extracting title: {str(e)}")
 
-        # Find all headers h1-h6 and their paragraphs
+        # Text-containing elements we want to collect
+        text_elements = ['p', 'span', 'div', 'li', 'td', 'th', 'a', 'strong', 'em', 'label']
+
+        # Find all headers h1-h6 and their text content
         try:
-            # First collect all headings to process
             all_headings = []
             for level in range(1, 7):
                 headings = soup.find_all(f'h{level}')
@@ -37,17 +39,14 @@ def collect_title_headers_paragraphs_meta(soup):
                     if heading and heading.text:
                         all_headings.append((level, heading))
             
-            # Sort headings by their appearance in document
             all_headings.sort(key=lambda x: x[1].sourceline if hasattr(x[1], 'sourceline') else 0)
             
-            # Process each heading
             for idx, (level, heading) in enumerate(all_headings):
                 try:
                     header_text = clean_text(heading.text)
                     if not header_text:
                         continue
                         
-                    # Create unique key if header text already exists
                     base_header_text = header_text
                     counter = 1
                     while header_text in page_data["headings"]:
@@ -56,11 +55,11 @@ def collect_title_headers_paragraphs_meta(soup):
 
                     page_data["headings"][header_text] = {
                         "level": level,
-                        "paragraphs": [],
+                        "texts": [],  # Changed from paragraphs to texts
                         "position": idx
                     }
                     
-                    # Find next element and collect paragraphs
+                    # Find next element and collect all text content
                     current_element = heading.find_next_sibling()
                     while current_element:
                         if current_element.name and current_element.name[0] == 'h':
@@ -71,10 +70,24 @@ def collect_title_headers_paragraphs_meta(soup):
                             except ValueError:
                                 pass
                         
-                        if current_element.name == 'p':
-                            paragraph_text = clean_text(current_element.text)
-                            if paragraph_text:
-                                page_data["headings"][header_text]["paragraphs"].append(paragraph_text)
+                        # Check if current element is a text container
+                        if current_element.name in text_elements:
+                            # Get text from the current element
+                            element_text = clean_text(current_element.text)
+                            if element_text:
+                                page_data["headings"][header_text]["texts"].append({
+                                    "type": current_element.name,
+                                    "content": element_text
+                                })
+                            
+                            # Also get text from nested elements
+                            for nested in current_element.find_all(text_elements):
+                                nested_text = clean_text(nested.text)
+                                if nested_text and nested_text != element_text:
+                                    page_data["headings"][header_text]["texts"].append({
+                                        "type": nested.name,
+                                        "content": nested_text
+                                    })
                         
                         current_element = current_element.find_next_sibling()
                         
@@ -84,7 +97,23 @@ def collect_title_headers_paragraphs_meta(soup):
                     
         except Exception as e:
             print(f"Error processing headings: {str(e)}")
-            page_data["headings"] = {}  # Reset headings if major error occurs
+            page_data["headings"] = {}
+
+        # Collect text content not under any heading
+        try:
+            page_data["orphan_texts"] = []
+            for element in soup.find_all(text_elements):
+                # Skip if element is under a heading (already collected)
+                if not any(heading.find(element) for (level, heading) in all_headings):
+                    text = clean_text(element.text)
+                    if text:
+                        page_data["orphan_texts"].append({
+                            "type": element.name,
+                            "content": text
+                        })
+        except Exception as e:
+            print(f"Error collecting orphan texts: {str(e)}")
+            page_data["orphan_texts"] = []
 
         # Collect metadata safely
         try:
@@ -107,17 +136,17 @@ def collect_title_headers_paragraphs_meta(soup):
                         continue
         except Exception as e:
             print(f"Error processing metadata: {str(e)}")
-            page_data["metadatas"] = []  # Reset metadata if major error occurs
+            page_data["metadatas"] = []
 
         return page_data
 
     except Exception as e:
         print(f"Error in collect_title_headers_paragraphs_meta: {str(e)}")
-        # Return a valid but empty structure if something goes wrong
         return {
             "title": "",
             "metadatas": [],
-            "headings": {}
+            "headings": {},
+            "orphan_texts": []
         }
 
 def get_urls_from_sitemap(sitemap_url):
