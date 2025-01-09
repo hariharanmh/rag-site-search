@@ -16,10 +16,10 @@ class Brain:
         print(f"Generated embeddings for {len(documents)} documents with size {embeddings.size}")
         return embeddings
 
-    def get_top_k_matching_docs(self, docs_embedding, query_embedding, k: int = 3) -> list[int]:
+    def get_top_k_matching_docs(self, docs, docs_embedding, query_embedding, k: int = 3) -> list[int]:
 
         def bin_search_on_docs_embedding(target):
-            keys = docs_embedding.keys()
+            keys = docs.keys()
             
             left, right = 0, len(keys) - 1
             
@@ -46,7 +46,7 @@ class Brain:
         return top_k_doc_keys
 
     def get_context(self, query, docs, docs_embedding, query_embedding) -> str:
-        top_k_doc_keys = self.get_top_k_matching_docs(docs_embedding, query_embedding,)
+        top_k_doc_keys = self.get_top_k_matching_docs(docs, docs_embedding, query_embedding,)
         most_scored_docs = [docs[keys] for keys in top_k_doc_keys]
         context = ""
         for doc in most_scored_docs:
