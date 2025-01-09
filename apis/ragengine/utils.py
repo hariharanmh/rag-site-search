@@ -1,35 +1,33 @@
 
 from configs import constants
 from .scrape import scrape_site_from_sitemap
+from .context_formatters import format_for_llm, format_for_embeddings
 
 
 def create_knowledge_base_from_sitemap(brain, sitemap_url: str, VECTOR_DB):
     site_data = scrape_site_from_sitemap(sitemap_url)
 
+    print(f"Scraped {len(docs)} pages")
+
     docs = []
     for url, page_data in site_data.items():
-        docs.append(create_document_from_page_data(url, page_data))
+        llm_context, embedding_chunks = format_for_llm(page_data), format_for_embeddings(page_data)
+        docs.append((llm_context, embedding_chunks))
 
-    print(f"Scraped {len(docs)} pages")
-    
     VECTOR_DB["url"] = sitemap_url
-    VECTOR_DB["data"] = docs
-    VECTOR_DB["embedding"] = brain.generate_embeddings(docs)
+    data, embeddings = {}, []
 
+    last_idx = 0
+    for idx, (llm_context, embedding_chunks) in enumerate(docs):
+        embedding_chunks_size = len(embedding_chunks)
+        data[f"{last_idx}-{last_idx+embedding_chunks_size}"] = llm_context
+        embeddings.extend(embedding_chunks)
+        last_idx = embedding_chunks_size + 1
 
-def create_document_from_page_data(url: str, page_data: dict) -> str:
-    document = f"URL: {url}\n"
-    document += f"Title: {page_data.get('title', )}\n"
+    VECTOR_DB["data"], VECTOR_DB["embedding"] = data, embeddings
 
-    document += "Headings and their paragraphs:\n"
-    for heading, content in page_data.get('headings', {}).items():
-        document += f"{heading}\n"
-        paragraphs = content['paragraphs']
-        if paragraphs:
-            document += f"{' '.join(paragraphs)}\n"
-    
-    document += f"Metadatas:"
-    for metadata in page_data.get("metadatas", []):
-        document += f"{metadata['content']}\n"
+    print(f"Created knowledge base with {len(VECTOR_DB['data'])} documents")
+    print(f"Created knowledge base with {len(VECTOR_DB['embedding'])} embeddings")
 
-    return document
+    print(list(VECTOR_DB["data"].keys())[:10])
+    print([len(embedding_chunks) for _, embedding_chunks in docs[:10]])
