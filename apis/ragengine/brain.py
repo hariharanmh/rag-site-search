@@ -12,7 +12,7 @@ class Brain:
         print(f"Loaded embedding model: {embedding_model_name}")
 
     def generate_embeddings(self, documents: list[str]) -> list[list[float]]:
-        embeddings = self.embed_model.encode(documents, normalize_embeddings=True)
+        embeddings = self.embed_model.encode(documents, normalize_embeddings=True, show_progress_bar=True)
         print(f"Generated embeddings for {len(documents)} documents with size {embeddings.size}")
         return embeddings
 
