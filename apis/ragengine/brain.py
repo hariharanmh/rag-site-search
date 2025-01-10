@@ -14,7 +14,7 @@ class Brain:
     def generate_embeddings(self, documents: list[str], use_multi_process: bool = False) -> list[list[float]]:
         if use_multi_process:
             pool = self.embed_model.start_multi_process_pool()
-            embeddings = self.embed_model.encode_multi_process(documents, normalize_embeddings=True, show_progress_bar=True)
+            embeddings = self.embed_model.encode_multi_process(documents, pool, normalize_embeddings=True, show_progress_bar=True)
             self.embed_model.stop_multi_process_pool(pool)
         else:
             embeddings = self.embed_model.encode(documents, normalize_embeddings=True, show_progress_bar=True)
