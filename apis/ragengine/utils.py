@@ -27,7 +27,7 @@ def create_knowledge_base_from_sitemap(brain, sitemap_url: str, VECTOR_DB):
         embeddings.extend(embedding_chunks)
         last_idx += (embedding_chunks_size + 1)
 
-    VECTOR_DB["data"], VECTOR_DB["embedding"] = data, brain.generate_embeddings(embeddings)
+    VECTOR_DB["data"], VECTOR_DB["embedding"] = data, brain.generate_embeddings(documents=embeddings, generate_embeddings=True)
 
     print(f"Created knowledge base with {len(VECTOR_DB['data'])} documents")
     print(f"Created knowledge base with {len(VECTOR_DB['embedding'])} embeddings")
