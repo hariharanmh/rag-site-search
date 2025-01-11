@@ -11,6 +11,7 @@ class Brain:
         genai.configure(api_key=GEMINI_API_KEY)
         print(f"Loaded embedding model: {embedding_model_name}")
 
+
     def generate_embeddings(self, documents: list[str], use_multi_process: bool = False) -> list[list[float]]:
         if use_multi_process:
             pool = self.embed_model.start_multi_process_pool()
@@ -21,10 +22,11 @@ class Brain:
         print(f"Generated embeddings for {len(documents)} documents with size {embeddings.size}")
         return embeddings
 
+
     def get_top_k_matching_docs(self, docs, docs_embedding, query_embedding, k: int = 3) -> list[int]:
 
         def bin_search_on_docs_embedding(target):
-            keys = docs.keys()
+            keys = list(docs.keys())
             
             left, right = 0, len(keys) - 1
             
@@ -50,7 +52,8 @@ class Brain:
 
         return top_k_doc_keys
 
-    def get_context(self, query, docs, docs_embedding, query_embedding) -> str:
+
+    def get_context(self, docs, docs_embedding, query_embedding) -> str:
         top_k_doc_keys = self.get_top_k_matching_docs(docs, docs_embedding, query_embedding,)
         most_scored_docs = [docs[keys] for keys in top_k_doc_keys]
         context = ""
@@ -58,11 +61,12 @@ class Brain:
             context += f"{doc}\n"
         return context
 
+
     def generate_response(self, query: str, VECTOR_DB) -> str:
         docs = VECTOR_DB["data"]
         docs_embedding = VECTOR_DB["embedding"]
         query_embedding = self.embed_model.encode([query], normalize_embeddings=True)
-        context = self.get_context(query, docs, docs_embedding, query_embedding)
+        context = self.get_context(docs, docs_embedding, query_embedding)
         prompt = f"""
             You are an intelligent search engine. You will be provided with some retrieved context, as well as the users query.
 
