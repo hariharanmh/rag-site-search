@@ -21,6 +21,4 @@ REDOC_URL = "/api/v1/redoc"
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 EMBEDDING_MODEL_NAME = "Alibaba-NLP/gte-base-en-v1.5"
 
-DATA_PATH = "data/archive/*"
-CHROMA_PATH = "site_data_embeddings"
-COLLECTION_NAME = "site_data"
+VECTOR_DB_FILE = "data/vector_db.pkl"
