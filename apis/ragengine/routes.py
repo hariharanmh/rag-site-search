@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, HTTPException, status
 from fastapi.params import Depends
 
 from .brain import Brain
@@ -16,16 +16,16 @@ brain = Brain()
 
 
 @router.post("/ingest", status_code=status.HTTP_201_CREATED)
-async def create_knowledge_base(sitemap_url: str, store_in_pickle: bool = False, db = Depends(get_db)):
+async def create_knowledge_base(sitemap_url: str, store_in_pickle: bool, background_tasks: BackgroundTasks, db = Depends(get_db)):
     if not sitemap_url:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Sitemap URL is required")
 
-    create_knowledge_base_from_sitemap(brain, sitemap_url, db)
+    background_tasks.add_task(create_knowledge_base_from_sitemap, brain, sitemap_url, db)
     
     if store_in_pickle:
         store_vector_db_in_pickle_file(db)
     
-    return {"message": "Knowledge base ingested successfully"}
+    return {"message": "Knowledge base ingestion started"}
 
 
 @router.get("/ask-query", status_code=status.HTTP_200_OK)
