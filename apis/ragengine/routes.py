@@ -49,10 +49,3 @@ def load_vector_db_from_pickle(db = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Knowledge base is empty")
     
     return {"message": "Vector DB loaded successfully"}
-
-
-# @router.get("/print-vector-db", status_code=status.HTTP_200_OK)
-# def print_vector_db():
-#     data = db.get("data")
-#     data_length = len(data) if data else 0
-#     return {"data_length": data_length, "sample_data": data[:5] if data else []}
