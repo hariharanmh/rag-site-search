@@ -20,6 +20,7 @@ async def create_knowledge_base(sitemap_url: str, store_in_pickle: bool, backgro
     if not sitemap_url:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Sitemap URL is required")
 
+    db["status"] = "loading"
     background_tasks.add_task(create_knowledge_base_from_sitemap, brain, sitemap_url, db)
     
     if store_in_pickle:

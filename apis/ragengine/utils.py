@@ -29,6 +29,7 @@ def create_knowledge_base_from_sitemap(brain, sitemap_url: str, db):
         last_idx += (embedding_chunks_size + 1)
 
     db["data"], db["embedding"] = data, brain.generate_embeddings(documents=embeddings, use_multi_process=True)
+    db["status"] = "completed"
 
     print(f"Created knowledge base with {len(db['data'])} documents")
     print(f"Created knowledge base with {len(db['embedding'])} embeddings")
