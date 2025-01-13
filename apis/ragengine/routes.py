@@ -29,6 +29,17 @@ async def create_knowledge_base(sitemap_url: str, store_in_pickle: bool, backgro
     return {"message": "Knowledge base ingestion started"}
 
 
+@router.get("/knowledge-base", status_code=status.HTTP_200_OK)
+def get_knowledge_base(db = Depends(get_db)):
+    if not db:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Knowledge base is empty")
+    
+    if db.get("status") == "loading":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Knowledge base is still loading")
+
+    return {"message": f"Knowledge {db["url"]} base is ready for querying"}
+
+
 @router.get("/ask-query", status_code=status.HTTP_200_OK)
 def get_prompt(prompt: str, db = Depends(get_db)):
     if not prompt:
