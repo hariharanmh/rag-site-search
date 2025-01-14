@@ -7,7 +7,7 @@
   packages = [ pkgs.python3 ];
   idx = {
     # Search for the extensions you want on https://open-vsx.org/ and use "publisher.id"
-    extensions = [ "ms-python.python@v2024.12.3" ];
+    extensions = [ "ms-python.python@v2024.12.3" "ms-python.black-formatter" ];
     workspace = {
       # Runs when a workspace is first created with this `dev.nix` file
       onCreate = {

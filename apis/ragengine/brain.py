@@ -4,35 +4,46 @@ import google.generativeai as genai
 
 from configs.constants import GEMINI_API_KEY
 
+
 class Brain:
 
     def __init__(self, embedding_model_name: str = "BAAI/bge-small-en-v1.5"):
-        self.embed_model = SentenceTransformer(embedding_model_name, trust_remote_code=True)
+        self.embed_model = SentenceTransformer(
+            embedding_model_name, trust_remote_code=True
+        )
         genai.configure(api_key=GEMINI_API_KEY)
         print(f"Loaded embedding model: {embedding_model_name}")
 
-
-    def generate_embeddings(self, documents: list[str], use_multi_process: bool = False) -> list[list[float]]:
+    def generate_embeddings(
+        self, documents: list[str], use_multi_process: bool = False
+    ) -> list[list[float]]:
         if use_multi_process:
             pool = self.embed_model.start_multi_process_pool()
-            embeddings = self.embed_model.encode_multi_process(documents, pool, normalize_embeddings=True, show_progress_bar=True)
+            embeddings = self.embed_model.encode_multi_process(
+                documents, pool, normalize_embeddings=True, show_progress_bar=True
+            )
             self.embed_model.stop_multi_process_pool(pool)
         else:
-            embeddings = self.embed_model.encode(documents, normalize_embeddings=True, show_progress_bar=True)
-        print(f"Generated embeddings for {len(documents)} documents with size {embeddings.size}")
+            embeddings = self.embed_model.encode(
+                documents, normalize_embeddings=True, show_progress_bar=True
+            )
+        print(
+            f"Generated embeddings for {len(documents)} documents with size {embeddings.size}"
+        )
         return embeddings
 
-
-    def get_top_k_matching_docs(self, docs, docs_embedding, query_embedding, k: int = 3) -> list[int]:
+    def get_top_k_matching_docs(
+        self, docs, docs_embedding, query_embedding, k: int = 3
+    ) -> list[int]:
 
         def bin_search_on_docs_embedding(target):
             keys = list(docs.keys())
-            
+
             left, right = 0, len(keys) - 1
-            
+
             while left <= right:
                 mid = (left + right) // 2
-                start, end = keys[mid].split('-')
+                start, end = keys[mid].split("-")
                 start, end = int(start), int(end)
 
                 if end < target:
@@ -52,15 +63,17 @@ class Brain:
 
         return top_k_doc_keys
 
-
     def get_context(self, docs, docs_embedding, query_embedding) -> str:
-        top_k_doc_keys = self.get_top_k_matching_docs(docs, docs_embedding, query_embedding,)
+        top_k_doc_keys = self.get_top_k_matching_docs(
+            docs,
+            docs_embedding,
+            query_embedding,
+        )
         most_scored_docs = [docs[keys] for keys in top_k_doc_keys]
         context = ""
         for doc in most_scored_docs:
             context += f"{doc}\n"
         return context
-
 
     def generate_response(self, query: str, VECTOR_DB) -> str:
         docs = VECTOR_DB["data"]
@@ -80,7 +93,7 @@ class Brain:
             Question: {query}
         """
         print(prompt)
-        model = genai.GenerativeModel('gemini-pro')
+        model = genai.GenerativeModel("gemini-pro")
         response = model.generate_content(prompt)
         if response.error:
             raise Exception(response.error)
